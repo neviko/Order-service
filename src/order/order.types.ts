@@ -6,6 +6,7 @@ export enum EEventNames {
   PAYMENT_APPROVED = "payment_approved",
   SHIPPING_APPROVED = "shipping_approved",
   PRODUCT_DELIVERED = "product_delivered",
+  ORDER_EXPIRED = "order_expired",
 }
 
 export enum EOrderStatus {
@@ -14,6 +15,7 @@ export enum EOrderStatus {
   CANCELLED,
   SHIPPING,
   DELIVERED,
+  EXPIRED,
 }
 
 export enum ESizes {
@@ -59,6 +61,9 @@ type TUser = {
 export type TPublishEvent = {
   name: EEventNames;
   payload: TPayloadTypes;
+  TTL?: number;
 };
 
 export type TPayloadTypes = TCreateOrderResponse | TCreateOrderRequest;
+
+export const SAVE_PRODUCTS_MIN = 15;

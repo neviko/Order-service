@@ -2,6 +2,7 @@ import { eventBridge } from "../services/aws";
 import {
   EEventNames,
   EOrderStatus,
+  SAVE_PRODUCTS_MIN,
   TCreateOrderRequest,
   TCreateOrderResponse,
   TPayloadTypes,
@@ -16,6 +17,11 @@ export const createOrderHandler = async (
     const newOrder = await (<TCreateOrderResponse>Order.create(order)); // Order is a mongoose model
     await newOrder.save();
     await publishEvent({ name: EEventNames.ORDER_CREATED, payload: newOrder });
+    await publishEvent({
+      name: EEventNames.ORDER_EXPIRED,
+      payload: newOrder,
+      TTL: SAVE_PRODUCTS_MIN,
+    });
 
     return newOrder;
   } catch (e) {
@@ -60,16 +66,33 @@ const onMessageReceived = async (event: TPublishEvent) => {
       event.payload.status = EOrderStatus.DELIVERED;
       await updateOrderDb(event);
       break;
+
+    case EEventNames.ORDER_EXPIRED:
+      await validateExpired(event.payload.id);
+      await updateOrderDb(event);
+      break;
   }
 };
 
-const updateOrderDb = async (event: TPublishEvent) => {
+const updateOrderDb = async (
+  id: string,
+  order: TOrder
+): TCreateOrderResponse => {
   try {
-    const updatedResult = await Order.findByIdAndUpdate(
-      { _id: event.payload.id },
-      event.payload
-    );
+    return <TCreateOrderResponse>Order.findByIdAndUpdate({ _id: id }, order);
   } catch (error) {
     console.log(error);
+  }
+};
+
+const validateExpired = async (id: string) => {
+  try {
+    const order = await (<TCreateOrderResponse>Order.findById(id));
+    if (order.status === EOrderStatus.CREATED) {
+      order.status = EOrderStatus.EXPIRED;
+      await updateOrderDb(id, { order });
+    }
+  } catch (error) {
+    // handle error
   }
 };
