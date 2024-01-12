@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 
 import { json } from "body-parser";
-import { signinRouter } from "./routes/signin";
+import { orderRouter } from "./order/order.controller";
 
 const app = express();
 app.use(
@@ -11,8 +11,7 @@ app.use(
   })
 );
 app.use(json());
-app.use(signinRouter);
-// if a route not found call to not found error, which it will call to error handler
+app.use(orderRouter);
 app.all("*", async () => {
   // not found
 });
